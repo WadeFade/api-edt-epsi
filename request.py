@@ -1,10 +1,13 @@
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
+import requests_cache
 
 from dateutils import get_month
 
 numberOfWeekByMonth = 8
+requests_cache.install_cache('request_cache', backend='sqlite', expire_after=10800, stale_if_error=True,
+                             always_revalidate=True, stale_while_revalidate=10800)
 
 
 async def get_current(firstname, lastname):

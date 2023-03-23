@@ -128,3 +128,5 @@ dmypy.json
 
 # files
 edt.html
+
+request_cache.sqlite
