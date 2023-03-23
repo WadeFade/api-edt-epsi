@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 
 from request import get_current
 
@@ -11,9 +11,10 @@ base_url: str = 'https://edtmobiliteng.wigorservices.net//WebPsDyn.aspx?action=p
 
 
 @app.get("/v1/month")
-async def get_edt_month(firstname: str, lastname: str):
+async def get_edt_month(firstname: str, lastname: str, format: str = None):
     # return await get_html_content(base_url, firstname, lastname, '2023-01-01')
-    return await get_current(firstname, lastname)
+    result = await get_current(firstname, lastname, format)
 
-
-
+    if format is None:
+        return result
+    return Response(content=result, media_type="text/calendar")

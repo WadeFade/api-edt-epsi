@@ -5,12 +5,19 @@ import requests_cache
 
 from dateutils import get_month
 
+# imports
+from icalendar import Calendar, Event, vCalAddress, vText
+from datetime import datetime
+from pathlib import Path
+import os
+import pytz
+
 numberOfWeekByMonth = 8
 requests_cache.install_cache('request_cache', backend='sqlite', expire_after=10800, stale_if_error=True,
                              always_revalidate=True, stale_while_revalidate=10800)
 
 
-async def get_current(firstname, lastname):
+async def get_current(firstname, lastname, format):
     result = []
 
     for i in range(numberOfWeekByMonth):
@@ -22,7 +29,47 @@ async def get_current(firstname, lastname):
 
         result.append(data)
 
-    return result
+    if format is None:
+        return result
+
+    ## create ical file
+
+    # init the calendar
+    cal = Calendar()
+
+    # Some properties are required to be compliant
+    cal.add('prodid', '-//EPSI ICAL //example.com//')
+    cal.add('version', '2.0')
+
+    for week in result:
+        for day in week['week']:
+            for course in week['week'][day]:
+                print(course)
+                # Create an event
+                event = Event()
+                event.add('name', course['subject'])
+                event.add('summary', course['subject'])
+                event.add('description',
+                          "Salle : " + course['room'] + "\n Distanciel : " + "Oui" if course['remote'] else "Non")
+
+                start_date = datetime.strptime(course['date'] + ' ' + course['start'], '%d/%m/%Y %H:%M')
+                end_date = datetime.strptime(course['date'] + ' ' + course['end'], '%d/%m/%Y %H:%M')
+
+                event.add('dtstart', start_date)
+                event.add('dtend', end_date)
+
+                # Add the organizer
+                organizer = vCalAddress('MAILTO:' + ".".join(str(course['professor']).split(" ")) + '@example.com')
+
+                # Add parameters of the event
+                organizer.params['name'] = vText(course['professor'])
+                organizer.params['role'] = vText('Prof')
+                event['organizer'] = organizer
+                event['location'] = vText(course['room'])
+                # Add the event to the calendar
+                cal.add_component(event)
+
+    return cal.to_ical().decode('utf-8')
 
 
 # TEST_URL = 'https://edtmobiliteng.wigorservices.net//WebPsDyn.aspx?action=posEDTBEECOME&serverid=i&Tel=mathis.gauthier&date=22/03/23'
