@@ -8,9 +8,6 @@ from dateutils import get_month
 # imports
 from icalendar import Calendar, Event, vCalAddress, vText
 from datetime import datetime
-from pathlib import Path
-import os
-import pytz
 
 numberOfWeekByMonth = 8
 requests_cache.install_cache('request_cache', backend='sqlite', expire_after=10800, stale_if_error=True,
@@ -34,42 +31,8 @@ async def get_current(firstname, lastname, format):
 
     ## create ical file
 
-    # init the calendar
-    cal = Calendar()
-
-    # Some properties are required to be compliant
-    cal.add('prodid', '-//EPSI ICAL //example.com//')
-    cal.add('version', '2.0')
-
-    for week in result:
-        for day in week['week']:
-            for course in week['week'][day]:
-                print(course)
-                # Create an event
-                event = Event()
-                event.add('name', course['subject'])
-                event.add('summary', course['subject'])
-                event.add('description',
-                          "Salle : " + course['room'] + "\n Distanciel : " + "Oui" if course['remote'] else "Non")
-
-                start_date = datetime.strptime(course['date'] + ' ' + course['start'], '%d/%m/%Y %H:%M')
-                end_date = datetime.strptime(course['date'] + ' ' + course['end'], '%d/%m/%Y %H:%M')
-
-                event.add('dtstart', start_date)
-                event.add('dtend', end_date)
-
-                # Add the organizer
-                organizer = vCalAddress('MAILTO:' + ".".join(str(course['professor']).split(" ")) + '@example.com')
-
-                # Add parameters of the event
-                organizer.params['name'] = vText(course['professor'])
-                organizer.params['role'] = vText('Prof')
-                event['organizer'] = organizer
-                event['location'] = vText(course['room'])
-                # Add the event to the calendar
-                cal.add_component(event)
-
-    return cal.to_ical().decode('utf-8')
+    ical = await generate_ical(result)
+    return ical.to_ical().decode('utf-8')
 
 
 # TEST_URL = 'https://edtmobiliteng.wigorservices.net//WebPsDyn.aspx?action=posEDTBEECOME&serverid=i&Tel=mathis.gauthier&date=22/03/23'
@@ -127,11 +90,17 @@ def scrap_week(firstname, lastname, queried_date):
 
             # other information
             # print(el.select('.TCase')[0].text.strip())
+
+            professor = el.select('.TCProf')[0].prettify().split('</span>')[1].split('<br/>')[0]
+
+            # professor = el.select('.TCProf')[0].text.split('<br>')[0].split('</span>')[1]
+
             subject = el.select('.TCase')[0].text.strip()
+            subject = subject.split(str(professor).replace('\n', '').strip())[0].strip()
+
             # print(subject)
             # print(el.select('.TCProf')[0].prettify().split('</span>')[1].split('<br/>')[0].strip().replace('\n', ''))
-            professor = el.select('.TCProf')[0].prettify().split('</span>')[1].split('<br/>')[0]
-            # professor = el.select('.TCProf')[0].text.split('<br>')[0].split('</span>')[1]
+
             bts = 'BTS' in professor
             professor = professor.replace('BTS', '').strip()
             room = el.select('.TCSalle')[0].text.replace('Salle:', '').strip()
@@ -193,9 +162,48 @@ def push_courses_util(response, key, course):
         response[key][course['weekday']] = [course]
     return response
 
+
 # def pushCoursesUtil(response, key, course):
 #     if course.weekday in response[key]:
 #         response[key][course.weekday].append(course)
 #     else:
 #         response[key][course.weekday] = [course]
 #     return response
+
+
+async def generate_ical(result):
+    # init the calendar
+    cal = Calendar()
+    # Some properties are required to be compliant
+    cal.add('prodid', '-//EPSI ICAL // brev.al//')
+    cal.add('version', '2.0')
+    for week in result:
+        for day in week['week']:
+            for course in week['week'][day]:
+                print(course)
+                # Create an event
+                event = Event()
+                event.add('name', course['subject'])
+                event.add('summary', course['subject'])
+                event.add('description',
+                          "Salle : " + course['room'] + "\n Distanciel : " + "Oui" if course[
+                              'remote'] else "Non" + "\n cours de : " + course['start'] + " à " + course[
+                              'end'] + "\n Professeur : " + course['professor'] + "\n Lien : " + course['link'])
+
+                start_date = datetime.strptime(course['date'] + ' ' + course['start'], '%d/%m/%Y %H:%M')
+                end_date = datetime.strptime(course['date'] + ' ' + course['end'], '%d/%m/%Y %H:%M')
+
+                event.add('dtstart', start_date)
+                event.add('dtend', end_date)
+
+                # Add the organizer
+                organizer = vCalAddress('MAILTO:' + ".".join(str(course['professor']).split(" ")) + '@epsi.fr')
+
+                # Add parameters of the event
+                organizer.params['name'] = vText(course['professor'])
+                organizer.params['role'] = vText('Prof')
+                event['organizer'] = organizer
+                event['location'] = vText(course['room'])
+                # Add the event to the calendar
+                cal.add_component(event)
+    return cal
