@@ -5,7 +5,12 @@
   ],
   "pip_requirements": {
     "fileMatch": [
-      "requirements.txt"
+      "requirements.txt",
+      "requirements.txt",
+      "\\\\.requirements$",
+      "\\.requirements$",
+      "requirements/.*\\.txt$",
+      "requir.*\\.txt$"
     ]
   }
 }
