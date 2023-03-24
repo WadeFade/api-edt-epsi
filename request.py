@@ -31,7 +31,7 @@ async def get_current(firstname, lastname, format):
 
     ## create ical file
 
-    ical = await generate_ical(result)
+    ical = generate_ical(result)
     return ical.to_ical().decode('utf-8')
 
 
@@ -171,7 +171,7 @@ def push_courses_util(response, key, course):
 #     return response
 
 
-async def generate_ical(result):
+def generate_ical(result) -> Calendar:
     # init the calendar
     cal = Calendar()
     # Some properties are required to be compliant
