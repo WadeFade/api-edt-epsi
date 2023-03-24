@@ -29,13 +29,10 @@ async def get_current(firstname, lastname, format):
     if format is None:
         return result
 
-    ## create ical file
-
     ical = generate_ical(result)
     return ical.to_ical().decode('utf-8')
 
 
-# TEST_URL = 'https://edtmobiliteng.wigorservices.net//WebPsDyn.aspx?action=posEDTBEECOME&serverid=i&Tel=mathis.gauthier&date=22/03/23'
 def scrap_week(firstname, lastname, queried_date):
     calendar_url_base_url = 'https://edtmobiliteng.wigorservices.net//WebPsDyn.aspx?action=posEDTBEECOME&serverid=i'
     calendar_url_to_scrap = f"{calendar_url_base_url}&Tel={firstname}.{lastname}&date={queried_date}"
@@ -54,19 +51,14 @@ def scrap_week(firstname, lastname, queried_date):
     key = 'week'
     result[key] = {}
 
-    # with open("edt.html", "r") as f:
-    #     # Pass the file object to BeautifulSoup's constructor
-    #     soup = BeautifulSoup(f, "html.parser")
-
     soup = BeautifulSoup(response.text, 'html.parser')
 
     days = soup.find_all('div', {'class': 'Jour'})
-    # print(days)
 
-    for day, el in enumerate(days):
+    for day, el1 in enumerate(days):
         theDay = day
         courses = soup.find_all('div', {'class': 'Case'})
-        leftCss = int(float(el['style'].split('left:')[1].split(';')[0].replace('%', '')) + 100)
+        leftCss = int(float(el1['style'].split('left:')[1].split(';')[0].replace('%', '')) + 100)
         for course, el in enumerate(courses):
             if (int(float(el['style'].split('left:')[1].split(';')[0].replace('%', ''))) != int(
                     float(leftCss) + 9)) and (
@@ -76,30 +68,21 @@ def scrap_week(firstname, lastname, queried_date):
                 continue
 
             day = soup.select('.TCJour')[theDay].text.split(' ')
-            print(f"day : {day}")
             # date
-            dayDate = day[1]
-            dayMonth = get_month(day[2])
+            day_date = day[1]
+            day_month = get_month(day[2])
             weekday = day[0].lower()
             year = queried_date.split('-')[0]
-            date = f"{dayDate}/{dayMonth}/{year}"
-            print(f"DATE : {date}")
+            date = f"{day_date}/{day_month}/{year}"
+
             # time
             start = el.select('.TChdeb')[0].text[:5]
             end = el.select('.TChdeb')[0].text[8:13]
 
-            # other information
-            # print(el.select('.TCase')[0].text.strip())
-
             professor = el.select('.TCProf')[0].prettify().split('</span>')[1].split('<br/>')[0]
-
-            # professor = el.select('.TCProf')[0].text.split('<br>')[0].split('</span>')[1]
 
             subject = el.select('.TCase')[0].text.strip()
             subject = subject.split(str(professor).replace('\n', '').strip())[0].strip()
-
-            # print(subject)
-            # print(el.select('.TCProf')[0].prettify().split('</span>')[1].split('<br/>')[0].strip().replace('\n', ''))
 
             bts = 'BTS' in professor
             professor = professor.replace('BTS', '').strip()
@@ -113,9 +96,6 @@ def scrap_week(firstname, lastname, queried_date):
             else:
                 presence = False
 
-            # teams_links = el.select('.Teams a')
-            # for teams_link in teams_links:
-            #     print(f"{teams_link.select('img').get('src')} : {teams_link.get('href')}")
             link = ''
             if el.select('.Teams a'):
                 link = el.select('.Teams a')[0].get('href')
@@ -161,14 +141,6 @@ def push_courses_util(response, key, course):
     else:
         response[key][course['weekday']] = [course]
     return response
-
-
-# def pushCoursesUtil(response, key, course):
-#     if course.weekday in response[key]:
-#         response[key][course.weekday].append(course)
-#     else:
-#         response[key][course.weekday] = [course]
-#     return response
 
 
 def generate_ical(result) -> Calendar:
