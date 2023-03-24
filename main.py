@@ -1,7 +1,7 @@
 import io
 from datetime import datetime
 
-from fastapi import FastAPI, Response
+from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from request import get_current
 
