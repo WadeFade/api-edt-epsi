@@ -1,7 +1,6 @@
 # -- coding: utf-8 --
 import unittest
-from unittest.mock import MagicMock, patch, PropertyMock
-from datetime import datetime
+from unittest.mock import MagicMock, patch
 
 from request import scrap_week, regroup_courses, generate_ical
 
