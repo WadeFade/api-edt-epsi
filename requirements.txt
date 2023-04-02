@@ -39,5 +39,5 @@ url-normalize==1.4.3
 urllib3==1.26.15
 uvicorn==0.21.1
 watchfiles==0.19.0
-websockets==10.4
+websockets==11.0
 yarl==1.8.2
