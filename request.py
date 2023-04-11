@@ -1,29 +1,22 @@
+from datetime import datetime
+from datetime import timedelta
+
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime, timedelta
-import requests_cache
-
+from icalendar import Calendar, Event, vCalAddress, vText
 from dateutils import get_month
 
-# imports
-from icalendar import Calendar, Event, vCalAddress, vText
-from datetime import datetime
-
 numberOfWeekByMonth = 8
-requests_cache.install_cache('request_cache', backend='sqlite', expire_after=10800, stale_if_error=True,
-                             always_revalidate=True, stale_while_revalidate=10800)
+# requests_cache.install_cache('request_cache', backend='sqlite', expire_after=10800, stale_if_error=True,
+#                              always_revalidate=True, stale_while_revalidate=10800)
 
 
 async def get_current(firstname, lastname, format):
     result = []
 
     for i in range(numberOfWeekByMonth):
-        # date = moment.date(moment.now().add(i * 7, 'd')).format('MM/DD/YY')
-
         date = (datetime.now() + timedelta(days=i * 7)).strftime("%Y-%m-%d")
-        print(date)
         data = scrap_week(firstname, lastname, date)
-
         result.append(data)
 
     if format is None:
@@ -36,7 +29,6 @@ async def get_current(firstname, lastname, format):
 def scrap_week(firstname, lastname, queried_date):
     calendar_url_base_url = 'https://edtmobiliteng.wigorservices.net//WebPsDyn.aspx?action=posEDTBEECOME&serverid=i'
     calendar_url_to_scrap = f"{calendar_url_base_url}&Tel={firstname}.{lastname}&date={queried_date}"
-    # print(calendar_url_to_scrap)
     response = requests.get(calendar_url_to_scrap)
     if response.status_code != 200:
         raise Exception('An error has occurred whilst trying to scrape the agenda')
@@ -63,8 +55,7 @@ def scrap_week(firstname, lastname, queried_date):
             if (int(float(el['style'].split('left:')[1].split(';')[0].replace('%', ''))) != int(
                     float(leftCss) + 9)) and (
                     int(float(el['style'].split('left:')[1].split(';')[0].replace('%', ''))) != leftCss or not
-            soup.select('.TCJour')[
-                course]):
+            soup.select('.TCJour')[course]):
                 continue
 
             day = soup.select('.TCJour')[theDay].text.split(' ')
@@ -73,8 +64,7 @@ def scrap_week(firstname, lastname, queried_date):
             day_month = get_month(day[2])
             weekday = day[0].lower()
             year = queried_date.split('-')[0]
-            date = f"{day_date}/{day_month}/{year}"
-
+            new_date = (datetime(int(year), int(day_month), int(day_date)) + timedelta(days=7)).strftime("%d/%m/%Y")
             # time
             start = el.select('.TChdeb')[0].text[:5]
             end = el.select('.TChdeb')[0].text[8:13]
@@ -100,7 +90,8 @@ def scrap_week(firstname, lastname, queried_date):
             if el.select('.Teams a'):
                 link = el.select('.Teams a')[0].get('href')
 
-            data = {'date': date, 'subject': subject, 'start': start, 'end': end, 'professor': professor, 'room': room,
+            data = {'date': new_date, 'subject': subject, 'start': start, 'end': end, 'professor': professor,
+                    'room': room,
                     'weekday': weekday, 'bts': bts, 'remote': remote, 'link': link, 'presence': presence}
 
             if weekday in result[key]:
@@ -120,6 +111,7 @@ def regroup_courses(result):
     for week, courses in result['week'].items():
         for i in range(len(courses)):
             if i < len(courses) - 1:
+                # Pour que 2x 2heures d'un même cours se transforme en un cours de 4h
                 if (courses[i]['date'] == courses[i + 1]['date'] and courses[i]['subject'] == courses[i + 1][
                     'subject'] and courses[i]['end'] == courses[i + 1]['start'] and courses[i]['professor'] ==
                         courses[i + 1]['professor'] and courses[i]['room'] == courses[i + 1]['room'] and courses[i][
@@ -152,7 +144,6 @@ def generate_ical(result) -> Calendar:
     for week in result:
         for day in week['week']:
             for course in week['week'][day]:
-                print(course)
                 # Create an event
                 event = Event()
                 event.add('name', course['subject'])
