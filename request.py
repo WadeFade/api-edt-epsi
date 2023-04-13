@@ -1,14 +1,11 @@
 from datetime import datetime
 from datetime import timedelta
-
 import requests
 from bs4 import BeautifulSoup
 from icalendar import Calendar, Event, vCalAddress, vText
 from dateutils import get_month
 
 numberOfWeekByMonth = 8
-# requests_cache.install_cache('request_cache', backend='sqlite', expire_after=10800, stale_if_error=True,
-#                              always_revalidate=True, stale_while_revalidate=10800)
 
 
 async def get_current(firstname, lastname, format):
