@@ -4,6 +4,7 @@ import requests
 from bs4 import BeautifulSoup
 from icalendar import Calendar, Event, vCalAddress, vText
 from dateutils import get_month
+from cachetools import cached, TTLCache
 
 numberOfWeekByMonth = 8
 
@@ -23,6 +24,7 @@ async def get_current(firstname, lastname, format):
     return ical.to_ical().decode('utf-8')
 
 
+@cached(cache=TTLCache(maxsize=1024, ttl=10800))
 def scrap_week(firstname, lastname, queried_date):
     calendar_url_base_url = 'https://edtmobiliteng.wigorservices.net//WebPsDyn.aspx?action=posEDTBEECOME&serverid=i'
     calendar_url_to_scrap = f"{calendar_url_base_url}&Tel={firstname}.{lastname}&date={queried_date}"
