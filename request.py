@@ -148,22 +148,22 @@ def generate_ical(result) -> Calendar:
                 event.add('name', course['subject'])
                 event.add('summary', course['subject'])
                 event.add('description',
-                          "Salle : " + course['room'] + "\n Distanciel : " + "Oui" if course[
-                              'remote'] else "Non" + "\n cours de : " + course['start'] + " à " + course[
-                              'end'] + "\n Professeur : " + course['professor'] + "\n Lien : " + course['link'])
+                          f"Distanciel: {course['remote']} \n Salle: {course['room']} \n Cours de: {course['start']} à {course['end']} \n Professeur: {course['professor']}")
 
                 start_date = datetime.strptime(course['date'] + ' ' + course['start'], '%d/%m/%Y %H:%M')
                 end_date = datetime.strptime(course['date'] + ' ' + course['end'], '%d/%m/%Y %H:%M')
 
-                event.add('dtstart', start_date)
-                event.add('dtend', end_date)
+                event.add('dtstart', datetime(start_date.year, start_date.month, start_date.day, start_date.hour, start_date.minute, 0, 0, tzinfo=pytz.timezone('Europe/Paris')))
+                event.add('dtend', datetime(end_date.year, end_date.month, end_date.day, end_date.hour, end_date.minute, 0, 0, tzinfo=pytz.timezone('Europe/Paris')))
+                event.add('dtstamp', datetime.now())
+                event.add('link', course['link'])
 
                 # Add the organizer
                 organizer = vCalAddress('MAILTO:' + ".".join(str(course['professor']).split(" ")) + '@epsi.fr')
 
                 # Add parameters of the event
-                organizer.params['name'] = vText(course['professor'])
-                organizer.params['role'] = vText('Prof')
+                organizer.params['CN'] = vText(course['professor'])
+                organizer.params['ROLE'] = vText('Prof')
                 event['organizer'] = organizer
                 event['location'] = vText(course['room'])
                 # Add the event to the calendar
