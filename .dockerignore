@@ -1,10 +1,8 @@
 .github/
-test_assets/
 .gitignore
 pyproject.toml
 README.md
 renovate.json
-test_request.py
 .idea/
 venv/
 .git/
