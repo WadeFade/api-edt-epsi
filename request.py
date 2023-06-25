@@ -73,7 +73,11 @@ def scrap_week(firstname, lastname, queried_date):
             professor = el.select('.TCProf')[0].prettify().split('</span>')[1].split('<br/>')[0]
 
             subject = el.select('.TCase')[0].text.strip()
-            subject = subject.split(str(professor).replace('\n', '').strip())[0].strip()
+            if professor.strip() != '':
+                subject = subject.split(professor.strip())[0].strip()
+            else:
+                professor = 'N/A'
+                subject = subject.split('INGENIERIE')[0].strip()
 
             bts = 'BTS' in professor
             professor = professor.replace('BTS', '').strip()
@@ -155,8 +159,11 @@ def generate_ical(result) -> Calendar:
                 start_date = datetime.strptime(course['date'] + ' ' + course['start'], '%d/%m/%Y %H:%M')
                 end_date = datetime.strptime(course['date'] + ' ' + course['end'], '%d/%m/%Y %H:%M')
 
-                event.add('dtstart', datetime(start_date.year, start_date.month, start_date.day, start_date.hour, start_date.minute, 0, 0, tzinfo=pytz.timezone('Europe/Paris')))
-                event.add('dtend', datetime(end_date.year, end_date.month, end_date.day, end_date.hour, end_date.minute, 0, 0, tzinfo=pytz.timezone('Europe/Paris')))
+                event.add('dtstart', datetime(start_date.year, start_date.month, start_date.day, start_date.hour,
+                                              start_date.minute, 0, 0, tzinfo=pytz.timezone('Europe/Paris')))
+                event.add('dtend',
+                          datetime(end_date.year, end_date.month, end_date.day, end_date.hour, end_date.minute, 0, 0,
+                                   tzinfo=pytz.timezone('Europe/Paris')))
                 event.add('dtstamp', datetime.now())
                 event.add('link', course['link'])
 
