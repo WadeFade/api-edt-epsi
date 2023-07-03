@@ -143,7 +143,7 @@ def push_courses_util(response, key, course):
 def generate_ical(result) -> Calendar:
     # init the calendar
     cal = Calendar()
-    date_export = datetime.now().strftime("%d/%m/%Y %H:%M")
+    date_export = datetime.now(tz=pytz.timezone('Europe/Paris')).strftime("%d/%m/%Y %H:%M")
     # Some properties are required to be compliant
     cal.add('prodid', '-//EPSI ICAL // brev.al//')
     cal.add('version', '2.0')
