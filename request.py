@@ -143,6 +143,7 @@ def push_courses_util(response, key, course):
 def generate_ical(result) -> Calendar:
     # init the calendar
     cal = Calendar()
+    date_export = datetime.now().strftime("%d/%m/%Y %H:%M")
     # Some properties are required to be compliant
     cal.add('prodid', '-//EPSI ICAL // brev.al//')
     cal.add('version', '2.0')
@@ -154,7 +155,7 @@ def generate_ical(result) -> Calendar:
                 event.add('name', course['subject'])
                 event.add('summary', course['subject'])
                 event.add('description',
-                          f"Distanciel: {course['remote']} \n Salle: {course['room']} \n Cours de: {course['start']} à {course['end']} \n Professeur: {course['professor']}")
+                          f"Distanciel: {course['remote']} \nSalle: {course['room']} \nCours de: {course['start']} à {course['end']} \nProfesseur: {course['professor']} \n(Importé le: {date_export})")
 
                 start_date = datetime.strptime(course['date'] + ' ' + course['start'], '%d/%m/%Y %H:%M')
                 end_date = datetime.strptime(course['date'] + ' ' + course['end'], '%d/%m/%Y %H:%M')
