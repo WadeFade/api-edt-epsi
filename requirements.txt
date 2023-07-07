@@ -20,7 +20,7 @@ idna==3.4
 iniconfig==2.0.0
 multidict==6.0.4
 packaging==23.1
-platformdirs==3.8.0
+platformdirs==3.8.1
 pluggy==1.2.0
 pydantic==1.10.11
 pytest==7.4.0
