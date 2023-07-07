@@ -2,7 +2,6 @@ from datetime import datetime
 from datetime import timedelta
 
 import pytz
-import requests
 from bs4 import BeautifulSoup
 from icalendar import Calendar, Event, vCalAddress, vText
 from dateutils import get_month
@@ -37,7 +36,6 @@ async def get_current(firstname, lastname, format):
     requests_response.sort(key=lambda x: x.request_kwargs['url'])
 
     for response in requests_response:
-        print(f'{response.status_code} : {response.request_kwargs["url"]}')
         result.append(parse_html_per_week(response))
 
     if format is None:
@@ -47,6 +45,7 @@ async def get_current(firstname, lastname, format):
     return ical.to_ical().decode('utf-8')
 
 
+@cached(cache=TTLCache(maxsize=1024, ttl=10800))
 def parse_html_per_week(week_data):
     result = {}
     key = 'week'
@@ -72,7 +71,7 @@ def parse_html_per_week(week_data):
             day_date = day[1]
             day_month = get_month(day[2])
             weekday = day[0].lower()
-            year = queried_date.split('-')[0]
+            year = week_data.request_kwargs['url'].split('date=')[1].split('-')[0]
             new_date = (datetime(int(year), int(day_month), int(day_date)) + timedelta(days=7)).strftime("%d/%m/%Y")
             # time
             start = el.select('.TChdeb')[0].text[:5]
