@@ -12,7 +12,7 @@ click==8.1.4
 colorama==0.4.6
 exceptiongroup==1.1.2
 fastapi==0.99.1
-frozenlist==1.3.3
+frozenlist==1.4.0
 h11==0.14.0
 httptools==0.6.0
 icalendar==5.0.7
