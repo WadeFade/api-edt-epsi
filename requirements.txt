@@ -11,7 +11,7 @@ charset-normalizer==3.2.0
 click==8.1.6
 colorama==0.4.6
 exceptiongroup==1.1.2
-fastapi==0.101.0
+fastapi==0.101.1
 frozenlist==1.4.0
 h11==0.14.0
 httptools==0.6.0
