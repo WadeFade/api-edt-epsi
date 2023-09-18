@@ -15,7 +15,7 @@ fastapi==0.103.1
 frozenlist==1.4.0
 h11==0.14.0
 httptools==0.6.0
-icalendar==5.0.7
+icalendar==5.0.8
 idna==3.4
 iniconfig==2.0.0
 multidict==6.0.4
