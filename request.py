@@ -2,22 +2,41 @@ from datetime import datetime
 from datetime import timedelta
 
 import pytz
-import requests
 from bs4 import BeautifulSoup
 from icalendar import Calendar, Event, vCalAddress, vText
 from dateutils import get_month
 from cachetools import cached, TTLCache
+from requests_toolbelt.threaded import pool
 
 numberOfWeekByMonth = 8
 
 
 async def get_current(firstname, lastname, format):
     result = []
-
+    urls = []
+    requests_response = []
     for i in range(numberOfWeekByMonth):
         date = (datetime.now() + timedelta(days=i * 7)).strftime("%Y-%m-%d")
-        data = scrap_week(firstname, lastname, date)
-        result.append(data)
+        calendar_url_base_url = 'https://edtmobiliteng.wigorservices.net//WebPsDyn.aspx?action=posEDTBEECOME&serverid=i'
+        calendar_url_to_scrap = f"{calendar_url_base_url}&Tel={firstname}.{lastname}&date={date}"
+        urls.append(calendar_url_to_scrap)
+
+    p = pool.Pool.from_urls(urls)
+    p.join_all()
+
+    new_pool = pool.Pool.from_exceptions(p.exceptions())
+    new_pool.join_all()
+
+    for response in p.responses():
+        requests_response.append(response)
+
+    for response in new_pool.responses():
+        requests_response.append(response)
+
+    requests_response.sort(key=lambda x: x.request_kwargs['url'])
+
+    for response in requests_response:
+        result.append(parse_html_per_week(response))
 
     if format is None:
         return result
@@ -27,24 +46,12 @@ async def get_current(firstname, lastname, format):
 
 
 @cached(cache=TTLCache(maxsize=1024, ttl=10800))
-def scrap_week(firstname, lastname, queried_date):
-    calendar_url_base_url = 'https://edtmobiliteng.wigorservices.net//WebPsDyn.aspx?action=posEDTBEECOME&serverid=i'
-    calendar_url_to_scrap = f"{calendar_url_base_url}&Tel={firstname}.{lastname}&date={queried_date}"
-    response = requests.get(calendar_url_to_scrap)
-    if response.status_code != 200:
-        raise Exception('An error has occurred whilst trying to scrape the agenda')
-    if 'Erreur de parametres' in response.text:
-        print({'status_code': response.status_code,
-               'response': response.text,
-               'url': calendar_url_to_scrap
-               })
-        raise Exception('E_SCRAPPING_PARAMETERS')
-
+def parse_html_per_week(week_data):
     result = {}
     key = 'week'
     result[key] = {}
 
-    soup = BeautifulSoup(response.text, 'html.parser')
+    soup = BeautifulSoup(week_data.text, 'html.parser')
 
     days = soup.find_all('div', {'class': 'Jour'})
 
@@ -64,7 +71,7 @@ def scrap_week(firstname, lastname, queried_date):
             day_date = day[1]
             day_month = get_month(day[2])
             weekday = day[0].lower()
-            year = queried_date.split('-')[0]
+            year = week_data.request_kwargs['url'].split('date=')[1].split('-')[0]
             new_date = (datetime(int(year), int(day_month), int(day_date)) + timedelta(days=7)).strftime("%d/%m/%Y")
             # time
             start = el.select('.TChdeb')[0].text[:5]
@@ -106,6 +113,86 @@ def scrap_week(firstname, lastname, queried_date):
 
     result = regroup_courses(result)
     return result
+
+
+# @cached(cache=TTLCache(maxsize=1024, ttl=10800))
+# def scrap_week(firstname, lastname, queried_date):
+#     response = requests.get(calendar_url_to_scrap)
+#     if response.status_code != 200:
+#         raise Exception('An error has occurred whilst trying to scrape the agenda')
+#     if 'Erreur de parametres' in response.text:
+#         print({'status_code': response.status_code,
+#                'response': response.text,
+#                'url': calendar_url_to_scrap
+#                })
+#         raise Exception('E_SCRAPPING_PARAMETERS')
+#
+#     result = {}
+#     key = 'week'
+#     result[key] = {}
+#
+#     soup = BeautifulSoup(response.text, 'html.parser')
+#
+#     days = soup.find_all('div', {'class': 'Jour'})
+#
+#     for day, el1 in enumerate(days):
+#         theDay = day
+#         courses = soup.find_all('div', {'class': 'Case'})
+#         leftCss = int(float(el1['style'].split('left:')[1].split(';')[0].replace('%', '')) + 100)
+#         for course, el in enumerate(courses):
+#             if (int(float(el['style'].split('left:')[1].split(';')[0].replace('%', ''))) != int(
+#                     float(leftCss) + 9)) and (
+#                     int(float(el['style'].split('left:')[1].split(';')[0].replace('%', ''))) != leftCss or not
+#             soup.select('.TCJour')[course]):
+#                 continue
+#
+#             day = soup.select('.TCJour')[theDay].text.split(' ')
+#             # date
+#             day_date = day[1]
+#             day_month = get_month(day[2])
+#             weekday = day[0].lower()
+#             year = queried_date.split('-')[0]
+#             new_date = (datetime(int(year), int(day_month), int(day_date)) + timedelta(days=7)).strftime("%d/%m/%Y")
+#             # time
+#             start = el.select('.TChdeb')[0].text[:5]
+#             end = el.select('.TChdeb')[0].text[8:13]
+#
+#             professor = el.select('.TCProf')[0].prettify().split('</span>')[1].split('<br/>')[0]
+#
+#             subject = el.select('.TCase')[0].text.strip()
+#             if professor.strip() != '':
+#                 subject = subject.split(professor.strip())[0].strip()
+#             else:
+#                 professor = 'N/A'
+#                 subject = subject.split('INGENIERIE')[0].strip()
+#
+#             bts = 'BTS' in professor
+#             professor = professor.replace('BTS', '').strip()
+#             room = el.select('.TCSalle')[0].text.replace('Salle:', '').strip()
+#             remote = 'distanciel' in subject.lower() or 'distanciel' in room.lower()
+#
+#             # presence
+#             presence = el.select('.Presence img')
+#             if presence and presence[0]['src'] == '/img/valide.png' or not presence:
+#                 presence = True
+#             else:
+#                 presence = False
+#
+#             link = ''
+#             if el.select('.Teams a'):
+#                 link = el.select('.Teams a')[0].get('href')
+#
+#             data = {'date': new_date, 'subject': subject, 'start': start, 'end': end, 'professor': professor,
+#                     'room': room,
+#                     'weekday': weekday, 'bts': bts, 'remote': remote, 'link': link, 'presence': presence}
+#
+#             if weekday in result[key]:
+#                 result[key][weekday].append(data)
+#             else:
+#                 result[key][weekday] = [data]
+#
+#     result = regroup_courses(result)
+#     return result
 
 
 def regroup_courses(result):
