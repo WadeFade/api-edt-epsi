@@ -8,6 +8,12 @@ from icalendar import Calendar, Event, vCalAddress, vText
 from dateutils import get_month
 from cachetools import cached, TTLCache
 from requests_toolbelt.threaded import pool
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+base_url_server = os.environ.get('BASE_URL_SERVER')
 
 numberOfWeekByMonth = 8
 
@@ -37,7 +43,7 @@ async def get_current(firstname, lastname, format):
     requests_response.sort(key=lambda x: x.request_kwargs['url'])
 
     for response in requests_response:
-        result.append(parse_html_per_week(response))
+        result.append(parse_html_per_week(response, firstname, lastname))
 
     if format is None:
         return result
@@ -54,7 +60,7 @@ async def get_teams_link(firstname, lastname, date_time):
     calendar_url_to_scrap = f"{calendar_url_base_url}&Tel={firstname}.{lastname}&date={date_cours}"
 
     response = requests.get(calendar_url_to_scrap)
-    print(response.text)
+
     if response.status_code != 200:
         raise Exception('An error has occurred whilst trying to scrape the agenda')
     if 'Erreur de parametres' in response.text:
@@ -65,12 +71,11 @@ async def get_teams_link(firstname, lastname, date_time):
         raise Exception('E_SCRAPPING_PARAMETERS')
 
     result = scrap_teams_link(response, date_time)
-    print(result)
-    return 'Not implemented yet'
+    return result
 
 
 @cached(cache=TTLCache(maxsize=1024, ttl=10800))
-def parse_html_per_week(week_data):
+def parse_html_per_week(week_data, firstname, lastname):
     result = {}
     key = 'week'
     result[key] = {}
@@ -122,9 +127,9 @@ def parse_html_per_week(week_data):
             else:
                 presence = False
 
-            link = ''
-            if el.select('.Teams a'):
-                link = el.select('.Teams a')[0].get('href')
+            formated_date = (datetime(int(year), int(day_month), int(day_date)) + timedelta(days=7)).strftime(
+                "%Y-%m-%d")
+            link = f"{base_url_server}/v1/teams?firstname={firstname}&lastname={lastname}&date_time={formated_date}T{start}"
 
             data = {'date': new_date, 'subject': subject, 'start': start, 'end': end, 'professor': professor,
                     'room': room,
@@ -139,11 +144,13 @@ def parse_html_per_week(week_data):
     return result
 
 
-def scrap_teams_link(data, date_time):
+def scrap_teams_link(data, date_time) -> str:
     soup = BeautifulSoup(data.text, 'html.parser')
     days = soup.find_all('div', {'class': 'Jour'})
 
-    print(f"datetime: {date_time}")
+    parsed_date = date_time.split('T')[0].split('-')
+    parsed_time = date_time.split('T')[1]
+    date_cours = date(int(parsed_date[0]), int(parsed_date[1]), int(parsed_date[2])).strftime("%d/%m/%Y")
 
     result_link = ''
 
@@ -162,43 +169,16 @@ def scrap_teams_link(data, date_time):
             # date
             day_date = day[1]
             day_month = get_month(day[2])
-            weekday = day[0].lower()
+
             year = date_time.split('T')[0].split('-')[0]
             new_date = (datetime(int(year), int(day_month), int(day_date)) + timedelta(days=7)).strftime("%d/%m/%Y")
             # time
             start = el.select('.TChdeb')[0].text[:5]
-            end = el.select('.TChdeb')[0].text[8:13]
 
-            professor = el.select('.TCProf')[0].prettify().split('</span>')[1].split('<br/>')[0]
+            if el.select('.Teams a') and new_date == date_cours and start == parsed_time:
+                result_link = el.select('.Teams a')[0].get('href')
 
-            subject = el.select('.TCase')[0].text.strip()
-            if professor.strip() != '':
-                subject = subject.split(professor.strip())[0].strip()
-            else:
-                professor = 'N/A'
-                subject = subject.split('INGENIERIE')[0].strip()
-
-            bts = 'BTS' in professor
-            professor = professor.replace('BTS', '').strip()
-            room = el.select('.TCSalle')[0].text.replace('Salle:', '').strip()
-            remote = 'distanciel' in subject.lower() or 'distanciel' in room.lower()
-
-            # presence
-            presence = el.select('.Presence img')
-            if presence and presence[0]['src'] == '/img/valide.png' or not presence:
-                presence = True
-            else:
-                presence = False
-
-            link = ''
-            if el.select('.Teams a'):
-                link = el.select('.Teams a')[0].get('href')
-
-            data = {'date': new_date, 'subject': subject, 'start': start, 'end': end, 'professor': professor,
-                    'room': room,
-                    'weekday': weekday, 'bts': bts, 'remote': remote, 'link': link, 'presence': presence}
-
-    return 'not implemented yet'
+    return result_link
 
 
 def regroup_courses(result):
