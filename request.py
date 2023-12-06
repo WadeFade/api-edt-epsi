@@ -228,7 +228,7 @@ def generate_ical(result) -> Calendar:
                 event.add('name', course['subject'])
                 event.add('summary', course['subject'])
                 event.add('description',
-                          f"Distanciel: {course['remote']} \nSalle: {course['room']} \nCours de: {course['start']} à {course['end']} \nProfesseur: {course['professor']} \n(Importé le: {date_export})")
+                          f"Distanciel: {course['remote']} \nSalle: {course['room']} \nCours de: {course['start']} à {course['end']} \nProfesseur: {course['professor']} \nLien EDT: {course['link']} \n(Importé le: {date_export})")
 
                 start_date = datetime.strptime(course['date'] + ' ' + course['start'], '%d/%m/%Y %H:%M')
                 end_date = datetime.strptime(course['date'] + ' ' + course['end'], '%d/%m/%Y %H:%M')
