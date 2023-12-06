@@ -1,0 +1,17 @@
+meta {
+  name: get teams link
+  type: http
+  seq: 2
+}
+
+get {
+  url: http://127.0.0.1:8000/v1/teams?firstname=mathis&lastname=gauthier&date_time=2023-12-06T08:00
+  body: none
+  auth: none
+}
+
+query {
+  firstname: mathis
+  lastname: gauthier
+  date_time: 2023-12-06T08:00
+}
