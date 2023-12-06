@@ -2,7 +2,8 @@ import io
 from datetime import datetime
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
-from request import get_current
+
+from request import get_current, get_teams_link
 
 app = FastAPI()
 
@@ -28,3 +29,9 @@ async def get_edt_month(firstname: str, lastname: str, format: str = None):
 
     headers = {"Content-Disposition": f"attachment; filename={file_name}"}
     return StreamingResponse(iter([file.getvalue()]), media_type="text/calendar", headers=headers)
+
+
+@app.get("/v1/teams")
+async def get_edt_teams(firstname: str, lastname: str, date_time: str):
+    result = await get_teams_link(firstname, lastname, date_time)
+    return result
