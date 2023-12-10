@@ -35,3 +35,7 @@ async def get_edt_month(firstname: str, lastname: str, format: str = None):
 async def get_edt_teams(firstname: str, lastname: str, date_time: str):
     result = await get_teams_link(firstname, lastname, date_time)
     return result
+
+@app.get("/")
+async def health_check():
+    return {"status": "ok"}
