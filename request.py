@@ -17,7 +17,7 @@ base_url_server = os.environ.get('BASE_URL_SERVER')
 
 numberOfWeekByMonth = 8
 
-
+# scrap the last 8 weeks
 async def get_current(firstname, lastname, format):
     result = []
     urls = []
@@ -52,6 +52,7 @@ async def get_current(firstname, lastname, format):
     return ical.to_ical().decode('utf-8')
 
 
+# scrap the teams link for a specific course
 async def get_teams_link(firstname, lastname, date_time):
     parsed_date = date_time.split('T')[0].split('-')
     date_cours = date(int(parsed_date[0]), int(parsed_date[1]), int(parsed_date[2])).strftime("%Y-%m-%d")
@@ -74,6 +75,7 @@ async def get_teams_link(firstname, lastname, date_time):
     return result
 
 
+# ICI le code chiant pour transformer le html degeu en json propre
 @cached(cache=TTLCache(maxsize=1024, ttl=10800))
 def parse_html_per_week(week_data, firstname, lastname):
     result = {}
@@ -212,7 +214,7 @@ def push_courses_util(response, key, course):
         response[key][course['weekday']] = [course]
     return response
 
-
+# Fonction pour générer le fichier ical
 def generate_ical(result) -> Calendar:
     # init the calendar
     cal = Calendar()
