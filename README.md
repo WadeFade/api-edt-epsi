@@ -1,5 +1,7 @@
 # API EDT EPSI
 
+### Projet déprécié : Un portail d'authentification a été ajouté sur l'EDT wigor.
+
 Ce projet permet d'intégrer l'emploi du temps de l'EPSI à votre calendrier Google.
 
 ## Fonctionnement
